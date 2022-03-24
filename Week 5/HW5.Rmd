@@ -1,0 +1,70 @@
+---
+title: "HW5"
+author: "Stone"
+date: "9/21/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r HW 5 Q8.2}
+
+rm(list = ls())
+
+
+
+# Read data
+uscrime <- read.table("uscrime.txt", stringsAsFactors = FALSE, header = TRUE)
+
+# Linear regression model creation
+lm_uscrime <- lm(Crime~., data = uscrime)
+
+#show me the model
+lm_uscrime
+
+# Check the P-value for the regression model
+summary(lm_uscrime)
+
+#this model actually has a very high R2 
+
+#however, it is unrealistically high (Dr. Sokol mentions R2 of <0.4 is often a really good model)
+
+#this model's R2 is so high due to the model being overfit to the parameters
+
+  
+#Create the test data from HW document
+test <-data.frame(M = 14.0,So = 0, Ed = 10.0, Po1 = 12.0, Po2 = 15.5,LF = 0.640, M.F = 94.0, Pop = 150, NW = 1.1, U1 = 0.120, U2 = 3.6, Wealth = 3200, Ineq = 20.1, Prob = 0.040,Time = 39.0)
+
+#filter out p-values above 0.05 
+filter_test <- data.frame(summary(lm_uscrime)$coef[summary(lm_uscrime)$coef[,4] <= .05, 4])
+
+#show the predictors that made the cut
+filter_test
+
+#create model using parameters found above
+#rule of thumb (from office hours) is at least 10 data points per parameter
+#so 4 parameters is a good amount 
+lm_uscrime0.05 <-lm(Crime~M+Ed+Ineq+Prob,uscrime)
+summary(lm_uscrime0.05)
+
+#this model shows a much lower R2 than the previous model
+#however this model will be more accurate to other test data
+#because we only took parameters that were meaningful from the data
+
+#predict crime rate
+prediction <- predict(lm_uscrime0.05,test)
+#show predicted crime rate
+prediction
+
+#crime rate seems reasonable and the model does not appear to be overfit :)
+
+```
+

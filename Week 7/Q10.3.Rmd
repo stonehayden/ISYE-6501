@@ -1,0 +1,186 @@
+---
+title: "HW7 Q10.3"
+author: "Stone"
+date: "10/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r HW7 Q10.3}
+
+rm(list=ls())
+library(pROC)
+
+#load data and show the top of it
+data<-read.table("germancredit.txt",sep = " ")
+head(data)
+
+#so V21 is in 1's and 2's and we need 0's and 1's so let's fix that
+data$V21[data$V21==1]<-0
+data$V21[data$V21==2]<-1
+
+#we should split the data into training and testing
+#let's do a 60/40 split
+rows <- nrow(data)
+train_size <- round((rows)*.6)
+train <- sample(1:rows, size = train_size, replace = FALSE)
+training <- data[train,]
+validate <- data[-train,]
+
+#now let's build our log regression model and show it
+log_reg = glm(V21 ~.,family=binomial(link = "logit"),data=training)
+summary(log_reg)
+#so let's redo this model with only the significant parameters shown in the first model
+log_reg = glm(V21 ~ V1+V2+V3+V4+V5+V6+V7+V8+V9+V10+V12+V14+V16+V20,family=binomial(link = "logit"),data=training)
+summary(log_reg)
+
+#lets do it again
+log_reg = glm(V21 ~ V1+V2+V4+V5+V6+V7+V8+V9+V10+V14,family=binomial(link = "logit"),data=training)
+summary(log_reg)
+
+#let's roll with the above model
+#lets make a prediction with it
+model_test <- predict(log_reg, newdata=validate[,-21], type="response")
+#let's make the confusion matrix
+test <- as.matrix(table(validate$V21, round(model_test)))
+test
+#show the accuracy from the confusion matrix
+accuracy <- (test[1,1]+test[2,2])/(test[1,1]+test[1,2]+test[2,1]+test[2,2])
+accuracy
+
+#now we have to binary out each important variable for testing
+training$V1A12[training$V1 == "A12"] <- 1
+training$V1A12[training$V1 != "A12"] <- 0
+
+training$V1A13[training$V1 == "A13"] <- 1
+training$V1A13[training$V1 != "A13"] <- 0
+
+training$V1A14[training$V1 == "A14"] <- 1
+training$V1A14[training$V1 != "A14"] <- 0
+
+training$V4A41[training$V4 == "A41"] <- 1
+training$V4A41[training$V4 != "A41"] <- 0
+
+training$V4A410[training$V4 == "A410"] <- 1
+training$V4A410[training$V4 != "A410"] <- 0
+
+training$V4A42[training$V4 == "A42"] <- 1
+training$V4A42[training$V4 != "A42"] <- 0
+
+training$V4A43[training$V4 == "A43"] <- 1
+training$V4A43[training$V4 != "A43"] <- 0
+
+training$V4A49[training$V4 == "A49"] <- 1
+training$V4A49[training$V4 != "A49"] <- 0
+
+training$V6A64[training$V6 == "A64"] <- 1
+training$V6A64[training$V6 != "A64"] <- 0
+
+training$V6A65[training$V6 == "A65"] <- 1
+training$V6A65[training$V6 != "A65"] <- 0
+
+training$V9A93[training$V9 == "A93"] <- 1
+training$V9A93[training$V9 != "A93"] <- 0
+
+training$V14A143[training$V14 == "A143"] <- 1
+training$V14A143[training$V14 != "A143"] <- 0
+
+#let's re-model with these subsets
+log_reg = glm(V21 ~ V1A13 + V1A14 + V2 + V4A41 + V4A410 + V4A42 + V4A43 + V4A49 + V5 + V6A64 + V6A65 + V8 + V9A93 + V14A143,family=binomial(link = "logit"),data=training)
+summary(log_reg)
+
+#remove V4A42 and V6A64 as these are shown not relevant above
+log_reg = glm(V21 ~ V1A13 + V1A14 + V2 + V4A41 + V4A410  + V4A43 + V4A49 + V5 + V6A65 + V8 + V9A93 + V14A143,family=binomial(link = "logit"),data=training)
+summary(log_reg)
+
+#now we have to validate
+#add above created variables to validation data
+validate$V1A12[validate$V1 == "A12"] <- 1
+validate$V1A12[validate$V1 != "A12"] <- 0
+
+validate$V1A13[validate$V1 == "A13"] <- 1
+validate$V1A13[validate$V1 != "A13"] <- 0
+
+validate$V1A14[validate$V1 == "A14"] <- 1
+validate$V1A14[validate$V1 != "A14"] <- 0
+
+validate$V4A41[validate$V4 == "A41"] <- 1
+validate$V4A41[validate$V4 != "A41"] <- 0
+
+validate$V4A410[validate$V4 == "A410"] <- 1
+validate$V4A410[validate$V4 != "A410"] <- 0
+
+validate$V4A42[validate$V4 == "A42"] <- 1
+validate$V4A42[validate$V4 != "A42"] <- 0
+
+validate$V4A43[validate$V4 == "A43"] <- 1
+validate$V4A43[validate$V4 != "A43"] <- 0
+
+validate$V4A49[validate$V4 == "A49"] <- 1
+validate$V4A49[validate$V4 != "A49"] <- 0
+
+validate$V6A64[validate$V6 == "A64"] <- 1
+validate$V6A64[validate$V6 != "A64"] <- 0
+
+validate$V6A65[validate$V6 == "A65"] <- 1
+validate$V6A65[validate$V6 != "A65"] <- 0
+
+validate$V9A93[validate$V9 == "A93"] <- 1
+validate$V9A93[validate$V9 != "A93"] <- 0
+
+validate$V14A143[validate$V14 == "A143"] <- 1
+validate$V14A143[validate$V14 != "A143"] <- 0
+
+#test model
+val_predict<-predict(log_reg,validate,type = "response")
+#set threshold for predictions
+threshold <- as.integer(val_predict > 0.5)
+con_mat <- table(threshold, validate$V21)
+con_mat
+accuracy <- (con_mat[1,1] + con_mat[2,2]) / sum(con_mat)
+accuracy
+
+#our new model accuracy is similar to the original model accuracy using all factors, so this model is superior as it is more simple and just as accurate
+
+#lets make the ROC curve for quality of fit
+QOF<-roc(validate$V21,threshold)
+plot(QOF,main="ROC")
+QOF
+
+#looks like for threshold of 0.5, it will classify ~70% of predictions correctly and 0.5 looks like a good threshold
+
+
+#PART B: incorrectly classifying a bad customer is 5 times worse than incorrectly classifying a good customer
+
+#let's find the optimal threshold...
+
+best <- c()
+for(i in 1:100)
+{
+  threshold <- as.integer(val_predict > (i/100)) # calculate threshold predictions
+
+  confusion <-as.matrix(table(threshold,validate$V21))
+
+  if(nrow(confusion)>1) { c1 <- confusion[2,1] } else { c1 <- 0 }
+  if(ncol(confusion)>1) { c2 <- confusion[1,2] } else { c2 <- 0 }
+  best <- c(best, c2*5 + c1)
+}
+
+plot(c(1:100)/100,best)
+
+best_threshold <- which.min(best)
+best_threshold/100
+#so best threshold for classifying is 0.15 (may vary slightly when I knit into html) in terms of costliness, but everything below .2 isn't bad
+
+#also, this HW was so long so congrats if you've peer graded all the way to the end here lol
+```
+

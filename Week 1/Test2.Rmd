@@ -1,0 +1,120 @@
+---
+title: "Test2"
+author: "Stone"
+date: "8/24/2020"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r HW1 2.2.1 ksvm model}
+#Question 2.2.1
+library(kernlab)
+#clear environment
+rm(list = ls())
+#convert given txt data to readable R table
+data <- read.table("credit_card_data.txt", stringsAsFactors = FALSE, header = FALSE)
+# call ksvm.  Vanilladot is a simple linear kernel. Create model.
+model <- ksvm(as.matrix(data[,1:10]), as.factor(data[,11]),type= "C-svc", kernel= "vanilladot", C=100, scaled=TRUE)
+#to view model in detail
+model
+# calculate a1…am (Coefficients to hyperplane)
+a <- colSums(model@xmatrix[[1]] * model@coef[[1]])
+a
+# calculate a0 (Intercept to SVM model)
+a0 <- -model@b
+a0
+# see what the model predicts
+pred <- predict(model,data[,1:10])
+pred
+# see what fraction of the model’s predictions match the actual classification (essentially accuracy rate)
+sum(pred == data[,11]) / nrow(data)
+
+# C = 100 most accurate for model based on accuracy of 86.39%
+#Other C Value's accuracy:
+# C = 1000 accuracy of 86.24%
+# C = 1e+06 accuracy of 62.54%
+# C = 0.001 accuracy of 83.79%
+# C = 1e-06 accuracy of 54.74%
+```
+
+
+
+```{r HW1 2.2.2 kknn}
+#Question 2.2.2
+rm(list = ls())
+
+#call kknn package
+library(kknn)
+
+#call same credit card data
+data <- read.table("credit_card_data.txt", stringsAsFactors = FALSE, header = FALSE)
+#will use 'data' as defined from ksvm model
+
+#function to loop through all 'i' points that will be called to loop through all k points 
+k_number_test <- function(x)  {
+
+#function to hold predictions
+predict_func <- rep(0,654)
+
+#create for loop to test all data points 'i' in table ('i' represents row containing multiple data attributes)
+for (i in 1:654){
+
+  #call kknn function and create new model.
+  #data[-i] to remove data point "i" from training data. Then use point data[i] as test data
+  model_kknn = kknn(V11~V1+V2+V3+V4+V5+V6+V7+V8+V9+V10, data[-i,], data[i,], k = x, distance = 2, kernel = "optimal",   scale = TRUE)
+  
+  #gives model's predicted value of data point 'i'
+  fitted.values(model_kknn)
+
+  #round fitted value to give either 1 or 0 prediction
+  predict_func[i] <- round(fitted.values(model_kknn))
+
+  #provide actual response value of data point 'i'
+  data[i,11]
+  }
+
+#check how many rounded values were correct
+accuracy = sum(predict_func == data[,11]) / 654
+#call accuracy percentage
+return(accuracy)
+
+    }
+
+#create k loop to find best value of k
+
+#function to hold values (similar to predict_func above)
+k_numbers <- rep(0,652)
+
+#loop here
+for (x in 1:652){
+  
+  #run through all numbers of k neighbors
+  k_numbers[x] = k_number_test(x)
+  
+}
+
+#call k_numbers
+k_numbers
+
+#give the max accuracy of k
+max(k_numbers)
+
+#give the position of highest accuracy (Returns best K value)
+which.max(k_numbers)
+
+
+
+```
+

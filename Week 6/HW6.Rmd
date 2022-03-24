@@ -1,0 +1,81 @@
+---
+title: "HW7"
+author: "Stone"
+datae: "10/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r HW 7 Q10.1}
+
+#setup libraries
+rm(list = ls())
+library(DAAG)
+library(tree)
+
+#read data and display top of it
+data <- read.table("uscrime.txt", stringsAsFactors = FALSE, header = TRUE)
+head(data)
+
+#lets make the regression tree model using tree function
+datatree <- tree(Crime~., data = data)
+#show me regression tree information
+summary(datatree)
+datatree$frame
+
+#lets plot it 
+plot(datatree)
+text(datatree)
+
+#time to prune and trim our tree
+#need to see quality of fit with different amount of leaves (end of branches)
+#we will do some cross-validation to test!
+leaftest <- cv.tree(datatree)
+plot(leaftest$size, leaftest$dev, type = "b")
+#well this is telling us that 7 is the best amount of leaves, which is how many the already plotted tree has...
+#lets move forward without pruning branches since 7 is shown to be the correct amount of leaves
+
+#let's calculate SSres of the original model
+predict <- predict(datatree)
+SSres <- sum((predict-data$Crime)^2)
+SSres
+
+#lets plot the crime rate vs our model's prediction
+plot(data$Crime, predict)
+abline(0,1)
+
+#now lets plot the residual shown above (the un-squared part)
+plot(data$Crime, scale(predict - data$Crime))
+abline(0,0)
+
+#lets find the R^2 value to show quality of fit
+SS <- sum((data$Crime - mean(data$Crime))^2)
+R2 <- 1 - SSres/SS
+R2
+#R2 is 0.7245, which is very good, but could be overfit due to using all 7 leaves
+
+#homework asks us to find the 'best' model so let's just check how the model would do with other number of leaves...
+prune.tree(datatree)$size
+prune.tree(datatree)$dev
+#still shows that 7 leaves is best
+#lets cross validate...
+leaf_count <- cv.tree(datatree) # cross-validation
+leaf_count$size
+leaf_count$dev
+
+#so these errors are massive when cross validated...showing that our model is overfit
+#however, the model will be overfit no matter how many leaves we use
+#so therefore, using the regression tree model, the 7 leaves approach is still the 'best' model available to us
+
+#the model is probably so overfit due to not having enough datapoints 
+```
+

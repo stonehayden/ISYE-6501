@@ -1,0 +1,51 @@
+---
+title: "Untitled"
+author: "Stone"
+date: "9/1/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r HW2-Q3.1}
+
+library(kernlab)
+library(kknn)
+library(ggplot2)
+
+rm(list = ls())
+
+set.seed(1)
+data <- read.table("credit_card_data.txt", stringsAsFactors = FALSE, header = FALSE)
+head(data)
+
+model=train.kknn(V11~.,data,kmax=10, scale=TRUE)
+# Accuracy Matrix
+model_accry=rep(0,30)
+# calculate prediction qualities
+for (k in 1:10) {
+model_predicted <- as.integer(fitted(model)[[k]][1:nrow(data)] + 0.5)
+model_accry[k] <- sum(model_predicted == data$V11)
+}
+# show accuracies
+model_accry
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

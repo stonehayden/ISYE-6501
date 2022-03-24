@@ -1,0 +1,260 @@
+---
+title: "HW2"
+author: "Stone"
+date: "9/2/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+Question 3.1 Part A
+Let's use cross-validation to find most accurate kknn model...
+
+```{r HW2-Q3.1 Part a}
+library(kernlab)
+library(kknn)
+library(ggplot2)
+
+rm(list = ls())
+
+set.seed(1)
+
+# read same credit card data from last HW
+data <- read.table("credit_card_data.txt", stringsAsFactors = FALSE, header = FALSE)
+
+# display top of data for verification 
+head(data)
+
+# run k nearest neighbor to train 20 models
+# k here represents k number of nearest numbers, not cv folds
+# train.kknn recommended over cv.kknn by TA's
+model <- train.kknn(V11~.,data,kmax=20, scale=TRUE)
+
+
+# hold empty vector for 20 values of k
+model_accuracy<-rep(0,20)
+
+# show model accuracy for 20 values of k 
+for (k in 1:20) {
+  
+# returns predicted value of each data point  
+model_num_correct <- round((fitted(model)[[k]][1:nrow(data)]))
+
+# compares predicted value from above and compares it to true response value. Divides by number of rows to give accuracy percentage
+model_accuracy[k] <- (sum(model_num_correct == data$V11)/nrow(data))
+}
+
+
+# show accuracy percentage for each value of k
+model_accuracy
+
+#give the highest accuracy percentage of the 20 models
+message("highest model accuracy: ",max(model_accuracy))
+
+#give the position of the highest accuracy(aka returns the corresponding k value)
+message("best k value: ", which.max(model_accuracy))
+
+
+# k = 12 is the most accurate model, which matches with the best k value from HW 1
+
+```
+
+Question 3.1 Part B
+Let's split data into Train, Validation, and Test data, and then find best kknn model...
+
+```{r HW2-Q3.1 Part b}
+
+
+# read same data
+data <- read.table("credit_card_data.txt", stringsAsFactors = FALSE, header = FALSE)
+# validate it looks right
+head(data)
+
+set.seed(1)
+
+# taking 60% of data for training (Dr. Sokol said normal is 50-70% so let's split the difference) 
+data_sample <- sample(nrow(data), round((nrow(data)* 0.6 )))
+
+# table that 60% of data to make it the training data
+training_data <- data[data_sample, ]
+
+# take remaining 40% of data for validation and testing (20% data each)
+# take what's not in train data
+hold1 <- data[-data_sample, ]
+
+# use sample() func that TA's recommend in office hours. Take half the available data
+hold2 <- sample(nrow(hold1), round(nrow(hold1)*.5))
+
+# validate holds the 20% of data we just found
+validate <- hold1[hold2, ]
+# test holds the remaining 20% that isn't in the validate data
+test <- hold1[-hold2, ]
+
+
+# let's make a callable function that will be a kknn model for our predetermined training data
+train.model <- function(x)
+{
+  
+#Continue with kknn over svm as it was called for in part a  
+model <- kknn(V11 ~., test, validate, k = x, scale = TRUE)
+
+# holds value of what model predicts response will be
+model_predicted <- as.matrix(model$fitted.values)
+
+# round the predicted values
+model_binary <- as.matrix(lapply(model_predicted[, 1], round))
+
+# put rounded predictions back into model for comparison
+model_correctness <- data.frame(validate[, 'V11'], model_binary)
+colnames(model_correctness) = c("actual", "predicted")
+return(model_correctness)
+}
+
+# let's make a callable function that gives accuracy % of test data
+test.model = function(model)
+{
+# test model's prediction with test data
+test_predict <- vector("list", nrow(model))
+for(i in 1:nrow(model)){
+test_predict[[i]] <- as.integer(model[i, 'actual'] == model[i, 'predicted'])
+}
+# get accuracy percentage of test model
+# gives number of accurate predictions
+right_response = sum(data.frame(test_predict))
+
+# divide number of right predictions by number of data rows in test data
+accuracy = right_response / nrow(model)
+return(accuracy)
+}
+
+# vector to hold 20 k values
+hold_k = rep(0,20)
+
+# train 20 models and then test those 20 models. Will give accuracy % and best value of k
+for (k in 1:20){
+  model_k = train.model(k)
+  model_k
+  hold_k[k]<- test.model(model_k)
+
+}
+
+#show the 20 accuracy values of k
+hold_k
+
+
+# best value of k is 10
+
+
+
+# retrain entire model using k = 10 as found above
+model = kknn(V11 ~., training_data, test, k = 10, scale = TRUE)
+model_predicted = as.matrix(model$fitted.values)
+model_binary = as.matrix(lapply(model_predicted[, 1], round))
+model_correctness = data.frame(validate[, 'V11'], model_binary)
+model_correctness = data.frame(test[, 'V11'], model_binary)
+colnames(model_correctness) = c("actual", "predicted")
+model_accuracy = test.model(model_correctness)
+message("Retrained model accuracy using k = 10: ", model_accuracy)
+
+```
+Question 4.2 
+Let's use kmeans function to cluster the iris data and give best combo of predictors, k, and accuracy...
+
+```{r HW2-Q4.2} 
+
+rm(list = ls())
+
+# scale iris data attributes
+scale(iris[,1:4])
+
+# read new iris data on flowers
+data <- read.table("iris.txt", header = TRUE, stringsAsFactors = F)
+
+
+#give table of each flower amount
+table(data$Species)
+
+
+# let's plot
+library(ggplot2)
+ggplot(data, aes(Sepal.Length, Petal.Width, color = Species)) + geom_point()
+
+#hold empty k values for 0-20
+k_num_centers = rep(0,20)
+
+# we're going to test with a bunch of different values for number of centers
+for (k in 1:20){
+cluster_1 <- kmeans(data[,1:4], centers = k, nstart = 10)
+
+# show me sum of squares distance
+k_num_centers[k] <- cluster_1$tot.withinss
+
+}
+
+# print all sum of squares distance
+k_num_centers
+# plot the distance numbers (THIS IS YOUR ELBOW DIAGRAM TO GIVE YOU WHAT TO SET K)
+plot(k_num_centers)
+
+# elbow diagram shows k = 3 as optimal clusters
+# run cluster_1 with 3 centers
+cluster_1 <- kmeans(data[,1:4], centers = 3, nstart = 10)
+
+table(cluster_1$cluster, data$Species)
+
+# Looking at the table above, 3 centers gives us 134 correct predictions out of 150...89.33% accuracy
+
+# Now we knew 3 clusters was the appropriate amount from the beginning because we were given the number of flower species up front
+# However, following the elbow diagram, 3 centers was still the most appropriate amount
+# While 3 centers is the 'appropriate' amount of centers according to the elbow diagram, higher values of k will produce more accurate results. They are less appropriate however due to the disproportionate increase in accuracy versus necessary computing power
+
+# We will use some other values of k for example though....
+
+
+# For 2 centers...
+cluster_2 <- kmeans(data[,1:4], centers = 2, nstart = 10)
+
+table(cluster_2$cluster, data$Species)
+
+# 2 centers gives approximately 100 accurate responses, a 67% accuracy rate 
+
+
+# For 5 centers...
+cluster_5 <- kmeans(data[,1:4], centers = 5, nstart = 10)
+
+table(cluster_5$cluster, data$Species)
+
+# 5 centers gives 136 accurate responses, a 90.66% accuracy rate 
+
+
+# For 8 centers...
+cluster_8 <- kmeans(data[,1:4], centers = 8, nstart = 10)
+
+table(cluster_8$cluster, data$Species)
+
+# 8 centers gives 145 accurate responses, a 96.66% accuracy rate 
+
+
+# For 10 centers...
+cluster_10 <- kmeans(data[,1:4], centers = 10, nstart = 10)
+
+table(cluster_10$cluster, data$Species)
+
+# 10 centers gives 146 accurate responses, a 97.33% accuracy rate 
+
+
+
+# In summary: Sepal.Length and Petal.Width are the best combination of predictors due to their scaled values being most correlated. k = 3 is the suggested value of k due to the elbow diagram, and this value of k=3 has an accuracy rate of 89.33% in predicting the right flower
+
+# AGAIN NOTE: k = 3 is not the 'best' value of k, but the 'optimum'. Note the huge difference in accuracy between 2 centers and 3, but not a huge increase in accuracy for each iteration of k up to 10 (a ~25% increase from 2 to 3, and a ~7% increase from 3 to 10)
+```
+

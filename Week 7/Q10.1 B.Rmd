@@ -1,0 +1,71 @@
+---
+title: "HW7 Q10.1 B"
+author: "Stone"
+date: "10/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r HW7 Q10.1 B}
+
+#setup libraries
+rm(list = ls())
+library(DAAG)
+library(tree)
+library(randomForest)
+
+#read data and display top of it
+data <- read.table("uscrime.txt", stringsAsFactors = FALSE, header = TRUE)
+head(data)
+
+#create randomforest model and set number of predictors to be sampled at each tree
+num_random <- 4
+forest <- randomForest(Crime~., data = data, mtry = num_random, importance = TRUE)
+#show the randomforest results
+forest
+
+#let's calculate SSres of the model (same as part A)
+predict <- predict(forest)
+SSres <- sum((predict-data$Crime)^2)
+SSres
+
+#plot model prediction vs actual results (following steps of part A)
+plot(data$Crime, predict)
+abline(0,1)
+plot(data$Crime, scale(predict - data$Crime))
+abline(0,0)
+
+#show me the R2 quality of fit
+SS <- sum((data$Crime - mean(data$Crime))^2)
+R2 <- 1 - SSres/SS
+R2
+#R2 shows a much lower quality of fit than the regression tree model from part A
+#let's cross validate for testing
+SSE <- 0
+for (i in 1:nrow(data)) {
+  rd <- randomForest(Crime~., data = data[-i,], mtry = num_random)
+  SSE = SSE + (predict(rd,newdata=data[i,]) - data[i,16])^2
+}
+1 - SSE/SS
+#since a random forest 'averages out' overfitting, this model is most likely more accurate than the tree from part A
+#however the disadvantage to this random forest model, is that we do not get to see a real, repeatable model
+#
+
+#we can also see through part A and B that Po1 being either lesser/greater than 7.65 is the most important factor among all crime factors
+#the following shows the weight or importance of each variable
+importance(forest)
+
+#we can see that Po1 is the most important, as observed previously
+#but we can also see that Po2, NW, and Prob are the next most important factors 
+```
+
+

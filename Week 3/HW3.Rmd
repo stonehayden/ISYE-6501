@@ -1,0 +1,49 @@
+---
+title: "HW3"
+author: "Stone"
+date: "9/8/2020"
+output: html_document
+---
+
+```{r HW 3 - Q 5.1}
+
+rm(list = ls())
+
+library(outliers)
+# read data
+uscrime <- read.table("uscrime.txt", stringsAsFactors = F, header = TRUE)
+# check it's right
+head(uscrime)
+
+crime <- uscrime[,"Crime"]
+
+#visualization plots
+
+plot(crime)
+plot(rep(0,length(crime)), crime)
+plot(uscrime$Pop,crime)
+
+#check if data is reasonably normal
+shapiro.test(crime)
+qqnorm(crime)
+
+# grubbs test
+# type 10 looks for outlier on one tail
+# type 11 looks for outlier on both tails
+# type 20 looks for 2 outliers on one tail
+
+# we pick type 11 for deviations on each side of bell curve
+grubbs.test(crime, type = 11)
+# 342 and 1993 are possible outliers
+
+# call box and whisker plot to verify outliers
+boxplot(crime,ylab="Crime Value")
+
+# 342 is inside box and whisker plot so 1993 is an outlier!
+
+# there also appears to be 2 other outlier points but grubbs test does not call out more than the 1 outlier without using type = 20, however tpye = 20 causes an error with this data set due to amount of data points
+
+
+
+
+```

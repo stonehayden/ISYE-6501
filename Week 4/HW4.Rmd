@@ -1,0 +1,99 @@
+---
+title: "HW3"
+author: "Stone"
+date: "9/16/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r HW 4 Q7.2}
+
+rm(list = ls())
+
+#read the data
+temps <- read.table("temps.txt", stringsAsFactors = F, header = T)
+#verify data
+head(temps)
+
+#convert to time series
+#converts data to one long line
+temps_vec <- as.vector(unlist(temps[,2:21]))
+head(temps_vec)
+temps_ts <- ts(temps_vec, start = 1996, frequency = 123)
+#print our time series data
+temps_ts
+
+write.csv(temps_ts, "MyDatats.csv", row.names = T)
+#lets plot the actual time series data
+plot(temps_ts)
+
+
+
+#exponential smooth data
+#we use 'NULL' in function so it finds values for us
+temps_HW <- HoltWinters(temps_ts, alpha = NULL, beta = NULL, gamma = NULL, seasonal = "multiplicative")
+#show smoothed data
+temps_HW
+
+#lets plot Holt_Winters data
+summary(temps_HW)
+plot(temps_HW)
+#Red line is model data, black line is actual data
+#Model doesn't begin right away because it needs some data to start
+
+#lets look at seasonal factors (cyclical data)
+head(temps_HW$fitted)
+plot(temps_HW$fitted)
+summary(temps_HW)
+df<-temps_HW$fitted
+write.csv(df, "MyData.csv", row.names = TRUE)
+
+#put data in matrix form
+temps_HW_sf <- matrix(temps_HW$fitted[,4], nrow = 123)
+#verify data/format looks right
+head(temps_HW_sf)
+
+#put Xhat values in a matrix
+temps_HW_smoothed <- matrix(temps_HW$fitted[,1],nrow = 123)
+head(temps_HW_smoothed)
+
+#add column names to each matrix
+colnames(temps_HW_sf) <- colnames(temps[,3:21])
+rownames(temps_HW_sf) <- temps[,1]
+
+colnames(temps_HW_smoothed) <- colnames(temps[,3:21])
+rownames(temps_HW_smoothed) <- temps[,1]
+
+#temps_HW_smoothed is now our smoothed matrix
+#now we need to test if the unofficial end of summer has gotten later
+
+#the Summer -> Fall calendar date is typically around September 21
+#so lets our model's expected temperatures for September 21 over time
+
+#if the temperature on September 21 is increasing over time, then the end of summer is coming later
+
+#lets see what happens
+
+sept_21<-rep(0,19)
+
+for (k in 1:ncol(temps_HW_smoothed)){
+  sept_21[k] <- temps_HW_smoothed[83, k]
+}
+#show September 21 temp data
+sept_21
+#plot the temp data in a line graph
+plot(sept_21, type = "o")
+
+#there is clearly no trend in the smoothed temperature data over time
+#therefore we reject the hypothesis that the unofficial end of summer is getting
+```
+
